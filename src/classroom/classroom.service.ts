@@ -188,7 +188,7 @@ export class ClassroomService {
       console.log(
         `[ClassroomService] Room ${classroomId} is now empty. Deleting room immediately.`,
       );
-      this.terminateRoomImmediately(classroomId, server, this.userRoomMap).catch((error) => {
+      this.terminateRoomImmediately(classroomId, server).catch((error) => {
         console.error(`[ClassroomService] Error terminating room ${classroomId}:`, error);
       });
       roomTerminated = true;
@@ -217,7 +217,7 @@ export class ClassroomService {
     if (room.managerId === userId) {
       disconnectSocket(socketId, 'manager left room');
 
-      await this.terminateRoomImmediately(classroomId, server, this.userRoomMap).catch((error) => {
+      await this.terminateRoomImmediately(classroomId, server).catch((error) => {
         console.error(`[ClassroomService] Error terminating room ${classroomId}:`, error);
       });
       return { success: true, message: '방이 삭제되었습니다!' };
@@ -234,7 +234,7 @@ export class ClassroomService {
     if (room.participants.size === 0) {
       disconnectSocket(socketId, 'last participant left');
 
-      this.terminateRoomImmediately(classroomId, server, this.userRoomMap).catch((error) => {
+      this.terminateRoomImmediately(classroomId, server).catch((error) => {
         console.error(`[ClassroomService] Error terminating room ${classroomId}:`, error);
       });
       return {
@@ -284,7 +284,7 @@ export class ClassroomService {
           `[ClassroomService] Grace period expired for room ${classroomId}. Terminating.`,
         );
         // Promise를 명시적으로 처리
-        this.terminateRoomImmediately(classroomId, server, this.userRoomMap)
+        this.terminateRoomImmediately(classroomId, server)
           .then(() => {
             console.log(`[ClassroomService] Room ${classroomId} terminated after grace period.`);
           })
@@ -298,11 +298,7 @@ export class ClassroomService {
   }
 
   // --- 명시적 즉시 방 삭제 메소드 ---
-  async terminateRoomImmediately(
-    classroomId: string,
-    server: Server,
-    userRoomMap: Map<string, string>,
-  ) {
+  async terminateRoomImmediately(classroomId: string, server: Server) {
     const room = this.roomData.get(classroomId);
     if (!room) return false;
 
@@ -341,7 +337,7 @@ export class ClassroomService {
 
     // 3. 메모리 정리
     for (const socketId of room.participants.keys()) {
-      userRoomMap.delete(socketId);
+      this.userRoomMap.delete(socketId);
     }
     this.roomCodeMap.delete(room.code);
     this.roomData.delete(classroomId);
