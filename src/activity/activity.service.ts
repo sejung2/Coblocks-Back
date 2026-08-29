@@ -94,7 +94,7 @@ export class ActivityService {
       if (!targetParticipant) return;
 
       if (!activity.currentQuest) {
-        console.error(`[Activity Service] currentQuest is null for room ${room.id}`);
+        console.error(`[Activity Service] currentQuest is null for room ${room.code}`);
         return;
       }
 
@@ -175,7 +175,7 @@ export class ActivityService {
 
     // activityStateService를 통해 솔루션 제출 처리
     this.activityStateService.updateUserSubmission(
-      classroomId,
+      room.id,
       userId,
       partNumber,
       data.submissionContent,
@@ -190,20 +190,15 @@ export class ActivityService {
     };
     server.to(room.code).emit(events.ACTIVITY_SUBMITTED, payload);
     console.log(
-      `[ActivityService] User ${userName} submitted solution for part ${partNumber} in room ${classroomId}.`,
+      `[ActivityService] User ${userName} submitted solution for part ${partNumber} in room ${room.id}.`,
     );
     return { success: true, message: '성공적으로 제출되었습니다.' };
   }
 
   // 최종 제출 요청
-  requestFinalSubmission(client: Socket, server: Server, data: { code: string }) {
+  requestFinalSubmission(client: Socket, server: Server) {
     // 방 정보 조회
-    const room = this.classroomService.findRoomByCode(data.code);
-    if (!room) {
-      throw new WsException('해당 방을 찾을 수 없습니다.');
-    }
-
-    const activity = this.activityStateService.getActivityState(room.id);
+    const { room, activity } = this._getRoomAndActivity(client.id);
 
     if (activity?.status !== 'active') {
       throw new WsException('활동이 진행 중이 아닙니다. 최종 제출을 요청할 수 없습니다.');
@@ -250,12 +245,8 @@ export class ActivityService {
   }
 
   // 활동 종료
-  endActivity(client: Socket, server: Server, data: { code: string }) {
-    const room = this.classroomService.findRoomByCode(data.code);
-    if (!room) {
-      throw new WsException('해당 방을 찾을 수 없습니다.');
-    }
-
+  endActivity(client: Socket, server: Server) {
+    const { room } = this._getRoomAndActivity(client.id);
     const result = this.activityStateService.endCurrentActivity(room.id);
 
     if (result) {
