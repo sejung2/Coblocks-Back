@@ -25,16 +25,16 @@ export class ActivityService {
   private readonly MAX_PARTICIPANT = 4;
 
   // 문제 세트 선택
-  async selectProblemSet(client: Socket, server: Server, data: SelectProblemDto) {
-    const room = this.classroomService.findRoomByCode(data.code);
-    if (!room) {
+  async selectProblemSet(client: Socket, server: Server, selectProblemData: SelectProblemDto) {
+    const roomId = this.classroomService.getRoomIdBySocketId(client.id);
+    if (!roomId) {
       console.log(`[ActivityService] 해당 방을 찾을 수 없습니다`);
       throw new WsException('해당 방을 찾을 수 없습니다.');
     }
 
     const { data: questDetailsArray, error: rpcError } = (await this.supabase.rpc(
       'get_quest_for_solving',
-      { p_quest_id: data.questId },
+      { p_quest_id: selectProblemData.questId },
     )) as SupabaseRpcResponse<QuestEntity>;
 
     if (rpcError) {
@@ -46,16 +46,23 @@ export class ActivityService {
       throw new WsException('해당 ID의 문제를 찾을 수 없습니다.');
     }
 
+    const room = this.classroomService.getRoomById(roomId);
+
+    if (!room) {
+      console.log('[ActivityService] 해당 방을 찾을 수 없습니다.');
+      throw new WsException('강의실 정보를 찾을 수 없습니다.');
+    }
+
     const questDetails = questDetailsArray[0];
     // activityStateService 통해 방의 활동 상태 업데이트
-    this.activityStateService.setSelectedQuest(room.id, questDetails);
+    this.activityStateService.setSelectedQuest(roomId, questDetails);
 
     // 방 전체에 선택된 문제 정보 브로드캐스트
     const payload = { questInfo: questDetails };
     server.to(room.code).emit(events.ACTIVITY_PROBLEM_SELECTED, payload);
 
     console.log(
-      `[ActivityService] Manager selected quest ${data.questId} for room ${room.code}. Broadcasted to all.`,
+      `[ActivityService] Manager selected quest ${selectProblemData.questId} for room ${room.code}. Broadcasted to all.`,
     );
 
     // 게이트웨이의 Ack콜백으로 성공 응답 반환
@@ -72,42 +79,41 @@ export class ActivityService {
       throw new WsException('참여자가 없습니다. 활동을 시작할 수 없습니다.');
     }
 
-    const assignments = participants.map((participant, index) => ({
+    const partAssignments = participants.map((participant, index) => ({
       userId: participant.userId,
       userName: participant.userName,
       partNumber: index + 1, // 1부터 시작하는 파트 번호
     }));
 
     // activityStateService를 통해 방의 활동 상태 업데이트
-    this.activityStateService.startActivity(room.id, assignments);
+    this.activityStateService.startActivity(room.id, partAssignments);
 
     // 각 참가자들에게 'activity begin' 이벤트 전송
-    assignments.forEach((assignment) => {
+    partAssignments.forEach((assignment) => {
       const targetParticipant = participants.find((p) => p.userId === assignment.userId);
       if (!targetParticipant) return;
 
-      // 1. 명시적 타입 단언
-      const questDetails = activity.currentQuest as QuestEntity;
-      if (!questDetails) {
+      if (!activity.currentQuest) {
         console.error(`[Activity Service] currentQuest is null for room ${room.id}`);
         return;
       }
 
+      const questDetails = activity.currentQuest;
+
       let userQuestContent = {};
       let userQuestQuestion = '문제 설명을 불러올 수 없습니다.';
 
-      // 2. context도 타입 단언
       const context = questDetails.quest_context;
 
       if (context.is_equal === true) {
-        // 3. 안전한 접근 - player1이 있으면 사용, 없으면 빈 객체
+        // 안전한 접근 - player1이 있으면 사용, 없으면 빈 객체
         userQuestContent = context.player1?.blocks || {};
 
         if (typeof questDetails.quest_question === 'string') {
           userQuestQuestion = questDetails.quest_question;
         }
       } else {
-        // 4. 동적 속성 접근을 안전하게
+        // 동적 속성 접근을 안전하게
         const playerKey = `player${assignment.partNumber}` as
           | 'player1'
           | 'player2'
@@ -149,14 +155,7 @@ export class ActivityService {
   // 솔루션 제출
   submitSolution(client: Socket, server: Server, data: SubmitSolutionDto) {
     // 방 정보 및 활동 정보 조회
-    const classroomId = this.classroomService.getRoomIdBySocketId(client.id);
-    if (!classroomId) throw new WsException('참여중인 강의실이 없습니다.');
-
-    const room = this.classroomService.getRoomById(classroomId);
-    if (!room) throw new WsException('강의실 정보를 찾을 수 없습니다.');
-
-    const activity = this.activityStateService.getActivityState(classroomId);
-    if (!activity) throw new WsException('활동 정보를 찾을 수 없습니다.');
+    const { room, activity } = this._getRoomAndActivity(client.id);
 
     // 상태 확인: 상태가 'active'여야 함
     if (activity.status !== 'active') {

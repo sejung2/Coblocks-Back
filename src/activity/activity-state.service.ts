@@ -45,17 +45,17 @@ export class ActivityStateService {
   }
 
   // 선택된 문제를 활동 상태에 저장함
-  setSelectedQuest(classroomId: string, questDetails: QuestEntity) {
-    const activity = this.activities.get(classroomId);
+  setSelectedQuest(roomId: string, questDetails: QuestEntity) {
+    const activity = this.activities.get(roomId);
     if (activity) {
       activity.currentQuest = questDetails;
       activity.status = 'waiting'; // 문제가 선택되었으므로 '시작 대기' 상태
       console.log(
-        `[ActivityStateService] Quest ${questDetails.quest_id} selected for room ${classroomId}`,
+        `[ActivityStateService] Quest ${questDetails.quest_id} selected for room ${roomId}`,
       );
     } else {
       console.error(
-        `[ActivityStateService] Failed to set quest. Activity state not found for room ${classroomId}`,
+        `[ActivityStateService] Failed to set quest. Activity state not found for room ${roomId}`,
       );
     }
   }
