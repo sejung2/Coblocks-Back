@@ -21,7 +21,7 @@ export interface QuestEntity {
         player3?: PlayerContext;
         player4?: PlayerContext;
       };
-  quest_question: string | { [key: string]: string };
+  quest_question: string | Record<'player1' | 'player2' | 'player3' | 'player4', string>;
   hint: string;
   answer: string;
   default_stage: {

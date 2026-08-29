@@ -125,7 +125,7 @@ export class ActivityService {
           typeof questDetails.quest_question === 'object' &&
           questDetails.quest_question !== null
         ) {
-          const questionObj = questDetails.quest_question as Record<string, string>;
+          const questionObj = questDetails.quest_question;
           userQuestQuestion = questionObj[playerKey] || '문제 설명을 불러올 수 없습니다.';
         }
       }
@@ -142,7 +142,7 @@ export class ActivityService {
           default_stage: questDetails.default_stage,
         },
         myPartNumber: assignment.partNumber,
-        allParticipantsAssignments: assignments,
+        allParticipantsAssignments: partAssignments,
       };
 
       server.to(targetParticipant.socketId).emit(events.ACTIVITY_BEGIN, payload);
