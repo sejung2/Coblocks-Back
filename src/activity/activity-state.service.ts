@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Activity } from './activity.interface';
+import { Activity, Submission } from './activity.interface';
 import { WsException } from '@nestjs/websockets';
 import { OnEvent } from '@nestjs/event-emitter';
 import { QuestEntity } from 'src/types/quest.types';
@@ -123,7 +123,7 @@ export class ActivityStateService {
   }
 
   // 해당하는 방의 모든 제출물을 가져옴
-  getAllSubmissions(classroomId: string): Record<string, any> {
+  getAllSubmissions(classroomId: string): Record<string, Submission> {
     const activity = this.activities.get(classroomId);
     if (activity) {
       return activity.submissions;

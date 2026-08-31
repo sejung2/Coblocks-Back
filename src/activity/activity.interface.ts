@@ -26,3 +26,8 @@ export interface Activity {
     }
   >;
 }
+
+export interface Submission {
+  partNumber: number;
+  content: string;
+}
