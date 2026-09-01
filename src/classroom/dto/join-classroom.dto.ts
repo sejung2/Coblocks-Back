@@ -2,11 +2,11 @@ import { IsString, IsUUID } from 'class-validator';
 
 export class JoinClassroomDto {
   @IsString()
-  code: string; // 방 코드
+  code!: string; // 방 코드
 
   @IsUUID()
-  userId: string; // 사용자 ID
+  userId!: string; // 사용자 ID
 
   @IsString()
-  userName: string; // 사용자 이름
+  userName!: string; // 사용자 이름
 }

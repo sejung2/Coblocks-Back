@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { ClassroomService } from 'src/classroom/classroom.service';
-import { SelectProblemDto } from './activityDto/SelectProblem.dto';
+import { SelectProblemDto } from './dto/SelectProblem.dto';
 import { WsException } from '@nestjs/websockets';
-import { SubmitSolutionDto } from './activityDto/SubmitSolution.dto';
+import { SubmitSolutionDto } from './dto/SubmitSolution.dto';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from 'src/database/supabase.service';
 import { events } from 'src/utils/events';

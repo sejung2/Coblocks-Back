@@ -2,17 +2,17 @@ import { IsString, IsUUID } from 'class-validator';
 
 export class CreateClassroomDto {
   @IsUUID()
-  id: string;
+  id!: string;
 
   @IsString()
-  name: string;
+  name!: string;
 
   @IsString()
-  code: string;
+  code!: string;
 
   @IsUUID()
-  managerId: string;
+  managerId!: string;
 
   @IsString()
-  managerName: string;
+  managerName!: string;
 }

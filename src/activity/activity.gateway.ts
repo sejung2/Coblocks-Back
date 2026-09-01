@@ -10,8 +10,8 @@ import { Socket, Server } from 'socket.io';
 import { WebsocketExceptionFilter } from 'src/websocket-exception/websocket-exception.filter';
 import { ActivityService } from './activity.service';
 import { ManagerGuard } from 'src/auth/manager/manager.guard';
-import { SelectProblemDto } from './activityDto/SelectProblem.dto';
-import { SubmitSolutionDto } from './activityDto/SubmitSolution.dto';
+import { SelectProblemDto } from './dto/SelectProblem.dto';
+import { SubmitSolutionDto } from './dto/SubmitSolution.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { events } from 'src/utils/events';
 /**
