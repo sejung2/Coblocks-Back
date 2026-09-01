@@ -190,7 +190,7 @@ export class ActivityService {
     };
     server.to(room.code).emit(events.ACTIVITY_SUBMITTED, payload);
     console.log(
-      `[ActivityService] User ${userName} submitted solution for part ${partNumber} in room ${room.id}.`,
+      `[ActivityService] User ${userName} submitted solution for part ${partNumber} in room ${room.code}.`,
     );
     return { success: true, message: '성공적으로 제출되었습니다.' };
   }
