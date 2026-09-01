@@ -25,8 +25,8 @@ export class ActivityService {
   private readonly MAX_PARTICIPANT = 4;
 
   // 문제 세트 선택
-  async selectProblemSet(client: Socket, server: Server, selectProblemData: SelectProblemDto) {
-    const roomId = this.classroomService.getRoomIdBySocketId(client.id);
+  async selectProblemSet(clientId: string, server: Server, selectProblemData: SelectProblemDto) {
+    const roomId = this.classroomService.getRoomIdBySocketId(clientId);
     if (!roomId) {
       console.log(`[ActivityService] 해당 방을 찾을 수 없습니다`);
       throw new WsException('해당 방을 찾을 수 없습니다.');
@@ -70,8 +70,8 @@ export class ActivityService {
   }
 
   // 활동 시작
-  startActivity(client: Socket, server: Server) {
-    const { room, activity } = this._getRoomAndActivity(client.id);
+  startActivity(clientId: string, server: Server) {
+    const { room, activity } = this._getRoomAndActivity(clientId);
 
     // 참여자들에게 파트 번호 배정
     const participants = Array.from(room.participants.values());
@@ -196,9 +196,9 @@ export class ActivityService {
   }
 
   // 최종 제출 요청
-  requestFinalSubmission(client: Socket, server: Server) {
+  requestFinalSubmission(clientId: string, server: Server) {
     // 방 정보 조회
-    const { room, activity } = this._getRoomAndActivity(client.id);
+    const { room, activity } = this._getRoomAndActivity(clientId);
 
     if (activity?.status !== 'active') {
       throw new WsException('활동이 진행 중이 아닙니다. 최종 제출을 요청할 수 없습니다.');
@@ -245,8 +245,8 @@ export class ActivityService {
   }
 
   // 활동 종료
-  endActivity(client: Socket, server: Server) {
-    const { room } = this._getRoomAndActivity(client.id);
+  endActivity(clientId: string, server: Server) {
+    const { room } = this._getRoomAndActivity(clientId);
     const result = this.activityStateService.endCurrentActivity(room.id);
 
     if (result) {

@@ -40,25 +40,25 @@ export class ActivityGateway {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SelectProblemDto,
   ) {
-    return this.activityService.selectProblemSet(client, this.server, data);
+    return this.activityService.selectProblemSet(client.id, this.server, data);
   }
 
   @UseGuards(ManagerGuard)
   @SubscribeMessage(events.ACTIVITY_START)
   handleStart(@ConnectedSocket() client: Socket) {
-    return this.activityService.startActivity(client, this.server);
+    return this.activityService.startActivity(client.id, this.server);
   }
 
   @UseGuards(ManagerGuard)
   @SubscribeMessage(events.ACTIVITY_FINAL_SUBMIT)
   handleFinalSubmit(@ConnectedSocket() client: Socket) {
-    return this.activityService.requestFinalSubmission(client, this.server);
+    return this.activityService.requestFinalSubmission(client.id, this.server);
   }
 
   @UseGuards(ManagerGuard)
   @SubscribeMessage(events.ACTIVITY_END)
   handleEnd(@ConnectedSocket() client: Socket) {
-    return this.activityService.endActivity(client, this.server);
+    return this.activityService.endActivity(client.id, this.server);
   }
 
   // 공용 핸들러
