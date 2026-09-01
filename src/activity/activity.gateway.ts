@@ -30,7 +30,7 @@ export class ActivityGateway {
   constructor(private readonly activityService: ActivityService) {}
 
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   // 방장 권한이 필요한 이벤트 핸들러
 
@@ -51,14 +51,14 @@ export class ActivityGateway {
 
   @UseGuards(ManagerGuard)
   @SubscribeMessage(events.ACTIVITY_FINAL_SUBMIT)
-  handleFinalSubmit(@ConnectedSocket() client: Socket, @MessageBody() data: { code: string }) {
-    return this.activityService.requestFinalSubmission(client, this.server, data);
+  handleFinalSubmit(@ConnectedSocket() client: Socket) {
+    return this.activityService.requestFinalSubmission(client, this.server);
   }
 
   @UseGuards(ManagerGuard)
   @SubscribeMessage(events.ACTIVITY_END)
-  handleEnd(@ConnectedSocket() client: Socket, @MessageBody() data: { code: string }) {
-    return this.activityService.endActivity(client, this.server, data);
+  handleEnd(@ConnectedSocket() client: Socket) {
+    return this.activityService.endActivity(client, this.server);
   }
 
   // 공용 핸들러
