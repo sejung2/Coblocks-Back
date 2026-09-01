@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClassroomModule } from './classroom/classroom.module';
@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { SupabaseModule } from './database/supabase.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { APP_PIPE } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -24,6 +25,13 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     SupabaseModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // HTTP, WebSocket 전역 ValidationPipe
+    {
+      provide: APP_PIPE,
+      useClass: ValidationPipe,
+    },
+  ],
 })
 export class AppModule {}
