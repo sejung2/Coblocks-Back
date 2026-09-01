@@ -1,5 +1,6 @@
 import { Socket } from 'socket.io';
-import { Handshake } from 'socket.io/dist/socket-types';
+
+type Handshake = Socket['handshake'];
 
 export interface AuthenticatedUser {
   userId: string;
@@ -17,7 +18,6 @@ export interface CustomHandshake extends Handshake {
 // 소켓에 대한 커스텀 인터페이스
 export interface TypedSocket extends Socket {
   user?: AuthenticatedUser; // 소켓에 저장된 사용자 정보
-  room?: any; // 소켓에 저장된 방 정보
   handshake: CustomHandshake;
 }
 

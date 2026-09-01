@@ -41,7 +41,6 @@ export class ManagerGuard implements CanActivate {
       console.log('[ManagerGuard] 방장 권한이 없습니다 (Not Room Manager).');
       throw new WsException('개설자만 사용할 수 있는 기능입니다.');
     }
-    client.room = room; // 소켓에 방 정보 저장
     return true; // 권한이 있는 경우 true 반환
   }
 }
