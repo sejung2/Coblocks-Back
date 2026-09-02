@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Classroom } from './classroom.interface';
 import { WsException } from '@nestjs/websockets';
-import { Participant } from './Participant.interface';
+import { Participant } from './participant.interface';
 import { Server } from 'socket.io';
 import { SupabaseService } from 'src/database/supabase.service';
 import { SupabaseClient } from '@supabase/supabase-js';

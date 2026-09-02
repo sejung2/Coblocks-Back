@@ -1,4 +1,4 @@
-import { Participant } from './Participant.interface';
+import { Participant } from './participant.interface';
 
 export interface Classroom {
   id: string; // 강의실ID(데이터베이스 내부 ID) (클라이언트로부터 받음)

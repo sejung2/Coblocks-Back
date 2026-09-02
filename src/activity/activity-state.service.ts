@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Activity, Submission } from './activity.interface';
 import { WsException } from '@nestjs/websockets';
 import { OnEvent } from '@nestjs/event-emitter';
-import { QuestEntity } from 'src/types/quest.types';
+import { QuestEntity } from 'src/activity/types/quest.types';
 
 @Injectable()
 export class ActivityStateService {

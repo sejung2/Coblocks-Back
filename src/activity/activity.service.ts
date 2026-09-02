@@ -8,7 +8,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from 'src/database/supabase.service';
 import { events } from 'src/utils/events';
 import { ActivityStateService } from './activity-state.service';
-import { QuestEntity, SupabaseRpcResponse } from 'src/types/quest.types';
+import { QuestEntity, SupabaseRpcResponse } from 'src/activity/types/quest.types';
 import { getSocketUser } from 'src/types/socket.types';
 
 @Injectable()
