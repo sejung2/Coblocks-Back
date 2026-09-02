@@ -8,13 +8,14 @@ import {
 import { Server, Socket } from 'socket.io';
 import { OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { ClassroomService } from './classroom.service';
-import { CreateClassroomDto } from './classroomDto/create-classroom.dto';
-import { JoinClassroomDto } from './classroomDto/join-classroom.dto';
+import { CreateClassroomDto } from './dto/create-classroom.dto';
+import { JoinClassroomDto } from './dto/join-classroom.dto';
 import { UseFilters, UseGuards } from '@nestjs/common';
 import { WebsocketExceptionFilter } from '../websocket-exception/websocket-exception.filter';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { events } from 'src/utils/events';
 import { getSocketUser } from 'src/types/socket.types';
+import { LeaveClassroomDto } from './dto/leave-classroom.dto';
 
 @UseGuards(JwtAuthGuard) // JWT 인증 가드 사용
 @WebSocketGateway({
@@ -75,14 +76,7 @@ export class ClassroomGateway implements OnGatewayConnection, OnGatewayDisconnec
       `[ClassroomGateway] Create room request from user ${data.managerId} with code ${data.code}.`,
     );
 
-    const newRoom = this.classroomService.createRoom(
-      data.id,
-      data.name,
-      data.code,
-      data.managerId,
-      client.id,
-      data.managerName,
-    ); // 방 생성
+    const newRoom = this.classroomService.createRoom(data, client.id); // 방 생성
 
     await client.join(newRoom.code); // 방에 참가
 
@@ -101,13 +95,7 @@ export class ClassroomGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   @SubscribeMessage(events.CLASSROOM_JOIN)
   async handleJoinRoom(@MessageBody() data: JoinClassroomDto, @ConnectedSocket() client: Socket) {
-    const room = this.classroomService.joinRoom(
-      data.code,
-      data.userId,
-      data.userName,
-      client.id,
-      this.server,
-    ); // 방 참가
+    const room = this.classroomService.joinRoom(data, client.id, this.server); // 방 참가
 
     await client.join(room.code); // 방에 참가
 
@@ -132,7 +120,7 @@ export class ClassroomGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   // 방 나가기 요청 처리(명시적 퇴장 요청)
   @SubscribeMessage(events.CLASSROOM_LEAVE)
-  async handleLeaveRoom(@MessageBody() data: { code: string }, @ConnectedSocket() client: Socket) {
+  async handleLeaveRoom(@MessageBody() data: LeaveClassroomDto, @ConnectedSocket() client: Socket) {
     const user = getSocketUser(client); // JWT 인증을 통해 사용자 정보 가져오기
     console.log(`[ClassroomGateway] leaveRoom request from ${user.userId} for room ${data.code}`);
 

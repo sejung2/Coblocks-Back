@@ -7,6 +7,8 @@ import { SupabaseService } from 'src/database/supabase.service';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { events } from 'src/utils/events';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { CreateClassroomDto } from './dto/create-classroom.dto';
+import { JoinClassroomDto } from './dto/join-classroom.dto';
 
 const MANAGER_RECONNECT_TIMEOUT = 60000; // 1분
 
@@ -27,44 +29,37 @@ export class ClassroomService {
   }
 
   // 방 생성
-  createRoom(
-    id: string,
-    name: string,
-    code: string,
-    managerId: string,
-    managerSocketId: string,
-    managerName: string,
-  ): Classroom {
-    if (this.roomCodeMap.has(code)) {
+  createRoom(data: CreateClassroomDto, clientId: string): Classroom {
+    if (this.roomCodeMap.has(data.code)) {
       // 방 코드 중복 체크
       throw new WsException('이미 사용 중인 방 코드입니다.');
     }
     const newRoom: Classroom = {
-      id,
-      name,
-      code,
-      managerId,
-      managerSocketId,
+      id: data.id,
+      name: data.name,
+      code: data.code,
+      managerId: data.managerId,
+      managerSocketId: clientId,
       participants: new Map<string, Participant>(), // key: socketId, value: Participant
       createdAt: new Date(),
       state: 'wait',
     };
     // 개설자를 참여자 목록에 추가
-    newRoom.participants.set(managerSocketId, {
-      userId: managerId,
-      userName: managerName,
-      socketId: managerSocketId,
+    newRoom.participants.set(clientId, {
+      userId: data.managerId,
+      userName: data.managerName,
+      socketId: clientId,
       isManager: true,
     });
 
     // 방 생성 시 해당 방의 활동 상태도 같이 초기화 - eventEmitter를 이용해 의존없는 방식으로 구현
-    this.eventEmitter.emit('room.created', { roomId: id });
+    this.eventEmitter.emit('room.created', { roomId: data.id });
 
-    this.roomData.set(id, newRoom);
-    this.roomCodeMap.set(code, id); // 방 코드와 ID 매핑
-    this.userRoomMap.set(managerSocketId, id); // 개설자 소켓 ID와 방 ID 매핑
+    this.roomData.set(data.id, newRoom);
+    this.roomCodeMap.set(data.code, data.id); // 방 코드와 ID 매핑
+    this.userRoomMap.set(clientId, data.id); // 개설자 소켓 ID와 방 ID 매핑
     console.log(
-      `[ClassroomService] Room Created: ${name} (${code}), Manager: ${managerName} (${managerId})`,
+      `[ClassroomService] Room Created: ${data.name} (${data.code}), Manager: ${data.managerName} (${data.managerId})`,
     );
     return newRoom;
   }
@@ -76,17 +71,11 @@ export class ClassroomService {
   }
 
   //방 참가
-  joinRoom(
-    code: string,
-    userId: string,
-    userName: string,
-    socketId: string,
-    server: Server,
-  ): Classroom {
-    const room = this.findRoomByCode(code); // 방 찾기
+  joinRoom(data: JoinClassroomDto, clientId: string, server: Server): Classroom {
+    const room = this.findRoomByCode(data.code); // 방 찾기
     if (!room || room === undefined) throw new WsException('존재하지 않는 방입니다.'); // 방이 존재하지 않으면 에러
 
-    const isManager = room.managerId === userId; // 참가자가 개설자인지 확인
+    const isManager = room.managerId === data.userId; // 참가자가 개설자인지 확인
 
     // 방이 유예기간인지 확인
     if (this.isGracePeriodActive(room.id)) {
@@ -94,7 +83,7 @@ export class ClassroomService {
       if (!isManager) {
         throw new WsException('개설자가 일시적으로 자리를 비웠습니다. 잠시 후 다시 시도해주세요.');
       } // 개설자가 재접속하는 경우는 이 검사를 통과하여 아래 로직으로 진행됩니다.
-      console.log(`[ClassroomService] Manager ${userName} is rejoining during grace period.`);
+      console.log(`[ClassroomService] Manager ${data.userName} is rejoining during grace period.`);
     } else {
       // 방이 정상 상태일 때
       // 개설자가 아닌 경우에만 만석 체크
@@ -104,29 +93,29 @@ export class ClassroomService {
     }
 
     // 동일 userId의 이전 소켓 정보 찾기 및 제거 (새로 고침 등으로 인한 중복 참가 방지)
-    let oldSocketId: string | null = null;
+    let oldClientId: string | null = null;
     for (const [sid, participant] of room.participants.entries()) {
-      if (participant.userId == userId) {
-        oldSocketId = sid; // 기존 소켓 ID 저장
+      if (participant.userId == data.userId) {
+        oldClientId = sid; // 기존 소켓 ID 저장
         break;
       }
     }
 
     // 이전 소켓이 존재하면 해당 소켓을 제거하고 새로 참가
-    if (oldSocketId && oldSocketId !== socketId) {
+    if (oldClientId && oldClientId !== clientId) {
       console.log(
-        `[ClassroomService] User ${userId} is rejoining. Removing old socket ${oldSocketId}.`,
+        `[ClassroomService] User ${data.userId} is rejoining. Removing old socket ${oldClientId}.`,
       );
-      room.participants.delete(oldSocketId); // 기존 소켓 정보 제거
-      this.userRoomMap.delete(oldSocketId); // 사용자-방 매핑에서 제거
-      const oldSocket = server.sockets.sockets.get(oldSocketId);
+      room.participants.delete(oldClientId); // 기존 소켓 정보 제거
+      this.userRoomMap.delete(oldClientId); // 사용자-방 매핑에서 제거
+      const oldSocket = server.sockets.sockets.get(oldClientId);
       if (oldSocket) oldSocket.disconnect(true); // 기존 소켓 연결 종료
     }
 
     // 개설자 재접속 시 유예기간 타이머 취소
-    if (room.managerId === userId) {
-      console.log(`[ClassroomService] Manager ${userId} joining/rejoining room ${room.id}.`);
-      room.managerSocketId = socketId; // 개설자 소켓 ID 업데이트
+    if (room.managerId === data.userId) {
+      console.log(`[ClassroomService] Manager ${data.userId} joining/rejoining room ${room.id}.`);
+      room.managerSocketId = clientId; // 개설자 소켓 ID 업데이트
       if (this.roomRecoveryTimers.has(room.id)) {
         clearTimeout(this.roomRecoveryTimers.get(room.id)); // 유예기간 타이머 취소
         this.roomRecoveryTimers.delete(room.id);
@@ -134,11 +123,16 @@ export class ClassroomService {
       }
     }
 
-    const newParticipant: Participant = { userId, userName, socketId, isManager };
-    room.participants.set(socketId, newParticipant); // 새 참가자 추가
-    this.userRoomMap.set(socketId, room.id); // 새 소켓 ID와 방 ID 매핑
+    const newParticipant: Participant = {
+      userId: data.userId,
+      userName: data.userName,
+      socketId: clientId,
+      isManager,
+    };
+    room.participants.set(clientId, newParticipant); // 새 참가자 추가
+    this.userRoomMap.set(clientId, room.id); // 새 소켓 ID와 방 ID 매핑
     console.log(
-      `[ClassroomService] User ${userName} (${userId}) joined room ${code} with socket ${socketId}.`,
+      `[ClassroomService] User ${data.userName} (${data.userId}) joined room ${data.code} with socket ${clientId}.`,
     );
 
     if (room.participants.size >= 4) room.state = 'full';
