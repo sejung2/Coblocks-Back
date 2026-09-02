@@ -1,6 +1,4 @@
 import { Module, ValidationPipe } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ClassroomModule } from './classroom/classroom.module';
 import { ChatModule } from './chat/chat.module';
 import { ActivityModule } from './activity/activity.module';
@@ -24,13 +22,15 @@ import { APP_PIPE } from '@nestjs/core';
     AuthModule,
     SupabaseModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     // HTTP, WebSocket 전역 ValidationPipe
     {
       provide: APP_PIPE,
-      useClass: ValidationPipe,
+      useValue: new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
     },
   ],
 })
